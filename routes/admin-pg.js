@@ -49,8 +49,12 @@ router.post('/fields', requireRole('hr'), async (req, res) => {
 });
 
 router.delete('/fields/:id', requireRole('hr'), async (req, res) => {
+  const fieldId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(fieldId) || fieldId < 1) {
+    return res.status(404).json({ error: 'Field not found' });
+  }
   try {
-    const result = await db.query('DELETE FROM custom_fields WHERE id = $1 RETURNING id', [req.params.id]);
+    const result = await db.query('DELETE FROM custom_fields WHERE id = $1 RETURNING id', [fieldId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Field not found' });
     }

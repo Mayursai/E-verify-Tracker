@@ -1,5 +1,39 @@
 const API_BASE = '/api';
 
+// ---------- Theme (dark / light) ----------
+// The initial theme is applied by an inline script in each page's <head>
+// (before first paint) to avoid a flash of the wrong theme.
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  document.querySelectorAll('.theme-toggle').forEach((btn) => {
+    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    btn.setAttribute('title', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  });
+}
+
+function toggleTheme() {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  try {
+    localStorage.setItem('theme', next);
+  } catch (err) {
+    // storage unavailable (private mode) - theme still applies for this page
+  }
+  applyTheme(next);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(currentTheme());
+  document.querySelectorAll('.theme-toggle').forEach((btn) => {
+    btn.addEventListener('click', toggleTheme);
+  });
+});
+
 const DASHBOARD_BY_ROLE = {
   employee: '/employee-dashboard.html',
   employer: '/employer-dashboard.html',

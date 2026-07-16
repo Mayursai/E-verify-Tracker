@@ -2,6 +2,7 @@
   --gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   --color-bg: #f4f5f9;
   --color-surface: #ffffff;
+  --color-surface-2: #f7f7fb;
   --color-border: #e2e4ea;
   --color-text: #1f2430;
   --color-muted: #6b7280;
@@ -9,8 +10,65 @@
   --color-primary-dark: #4338ca;
   --color-danger: #dc2626;
   --color-danger-dark: #b91c1c;
+  --color-approve: #16a34a;
+  --color-approve-dark: #15803d;
+  --color-secondary-btn: #eef0f5;
+  --color-secondary-btn-hover: #e2e4ea;
+  --color-row-hover: #f7f7fb;
+  --alert-error-bg: #fef2f2;
+  --alert-error-text: #b91c1c;
+  --alert-error-border: #fecaca;
+  --alert-success-bg: #f0fdf4;
+  --alert-success-text: #15803d;
+  --alert-success-border: #bbf7d0;
+  --badge-pending-bg: #fef3c7;
+  --badge-pending-text: #92400e;
+  --badge-approved-bg: #dcfce7;
+  --badge-approved-text: #15803d;
+  --badge-denied-bg: #fee2e2;
+  --badge-denied-text: #b91c1c;
+  --badge-completed-bg: #e0e7ff;
+  --badge-completed-text: #3730a3;
+  --modal-overlay: rgba(15, 17, 26, 0.5);
   --radius: 10px;
   --shadow: 0 4px 16px rgba(31, 36, 48, 0.08);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --gradient: linear-gradient(135deg, #3730a3 0%, #5b21b6 100%);
+  --color-bg: #12141c;
+  --color-surface: #1c1f2b;
+  --color-surface-2: #232736;
+  --color-border: #333849;
+  --color-text: #e6e8ef;
+  --color-muted: #9aa1b2;
+  --color-primary: #6d64f2;
+  --color-primary-dark: #857df5;
+  --color-danger: #ef4444;
+  --color-danger-dark: #f87171;
+  --color-approve: #22c55e;
+  --color-approve-dark: #4ade80;
+  --color-secondary-btn: #2b3040;
+  --color-secondary-btn-hover: #353b4e;
+  --color-row-hover: #232736;
+  --alert-error-bg: #3a1d1f;
+  --alert-error-text: #fca5a5;
+  --alert-error-border: #7f1d1d;
+  --alert-success-bg: #16281c;
+  --alert-success-text: #86efac;
+  --alert-success-border: #14532d;
+  --badge-pending-bg: #3d3117;
+  --badge-pending-text: #fcd34d;
+  --badge-approved-bg: #14311f;
+  --badge-approved-text: #86efac;
+  --badge-denied-bg: #3a1d1f;
+  --badge-denied-text: #fca5a5;
+  --badge-completed-bg: #232750;
+  --badge-completed-text: #a5b4fc;
+  --modal-overlay: rgba(0, 0, 0, 0.65);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
 }
 
 * {
@@ -22,10 +80,48 @@ body {
   font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 a {
   color: var(--color-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ---------- Theme toggle ---------- */
+
+.theme-toggle {
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.auth-card .theme-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--color-secondary-btn);
+  color: var(--color-text);
+}
+
+.auth-card .theme-toggle:hover {
+  background: var(--color-secondary-btn-hover);
 }
 
 /* ---------- Auth page ---------- */
@@ -40,6 +136,7 @@ a {
 }
 
 .auth-card {
+  position: relative;
   background: var(--color-surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -64,7 +161,7 @@ a {
 .demo-credentials {
   margin-top: 24px;
   padding: 14px 16px;
-  background: #f7f7fb;
+  background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   font-size: 0.8rem;
@@ -164,7 +261,7 @@ textarea {
   border-radius: 8px;
   font-size: 0.95rem;
   font-family: inherit;
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
@@ -231,12 +328,12 @@ button {
 }
 
 .btn-secondary {
-  background: #eef0f5;
+  background: var(--color-secondary-btn);
   color: var(--color-text);
 }
 
 .btn-secondary:hover {
-  background: #e2e4ea;
+  background: var(--color-secondary-btn-hover);
 }
 
 .btn-danger {
@@ -248,11 +345,11 @@ button {
 }
 
 .btn-approve {
-  background: #16a34a;
+  background: var(--color-approve);
 }
 
 .btn-approve:hover {
-  background: #15803d;
+  background: var(--color-approve-dark);
 }
 
 .btn-sm {
@@ -270,15 +367,15 @@ button {
 }
 
 .alert-error {
-  background: #fef2f2;
-  color: var(--color-danger-dark);
-  border: 1px solid #fecaca;
+  background: var(--alert-error-bg);
+  color: var(--alert-error-text);
+  border: 1px solid var(--alert-error-border);
 }
 
 .alert-success {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border: 1px solid var(--alert-success-border);
 }
 
 /* ---------- Filters ---------- */
@@ -305,7 +402,7 @@ button {
 }
 
 .stat-tile {
-  background: #f7f7fb;
+  background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 18px;
@@ -351,6 +448,10 @@ th {
   letter-spacing: 0.03em;
 }
 
+tbody tr:hover {
+  background: var(--color-row-hover);
+}
+
 .empty-state {
   text-align: center;
   color: var(--color-muted);
@@ -368,23 +469,23 @@ th {
 }
 
 .badge-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
 }
 
 .badge-approved {
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--badge-approved-bg);
+  color: var(--badge-approved-text);
 }
 
 .badge-denied {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--badge-denied-bg);
+  color: var(--badge-denied-text);
 }
 
 .badge-completed {
-  background: #e0e7ff;
-  color: #3730a3;
+  background: var(--badge-completed-bg);
+  color: var(--badge-completed-text);
 }
 
 /* ---------- Modal ---------- */
@@ -392,7 +493,7 @@ th {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 26, 0.5);
+  background: var(--modal-overlay);
   display: none;
   align-items: center;
   justify-content: center;
@@ -405,7 +506,7 @@ th {
 }
 
 .modal {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: var(--radius);
   width: 100%;
   max-width: 480px;

@@ -46,8 +46,12 @@ router.get('/', requireAuth, async (req, res) => {
 
 // Get single request
 router.get('/:id', requireAuth, async (req, res) => {
+  const requestId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(requestId) || requestId < 1) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
   try {
-    const result = await db.query('SELECT * FROM requests WHERE id = $1', [req.params.id]);
+    const result = await db.query('SELECT * FROM requests WHERE id = $1', [requestId]);
     const row = result.rows[0];
     if (!row) {
       return res.status(404).json({ error: 'Request not found' });
@@ -108,6 +112,10 @@ router.post('/', requireRole('employee'), async (req, res) => {
 
 // Update status/comment (employer approves/denies, HR can set any status)
 router.put('/:id', requireRole('employer', 'hr'), async (req, res) => {
+  const requestId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(requestId) || requestId < 1) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
   const { status, comment } = req.body || {};
   const allowed = req.session.user.role === 'employer'
     ? ['approved', 'denied']
@@ -125,7 +133,7 @@ router.put('/:id', requireRole('employer', 'hr'), async (req, res) => {
            completed_date = CASE WHEN $1 = 'completed' THEN CURRENT_DATE ELSE NULL END
        WHERE id = $3
        RETURNING *`,
-      [status, comment || '', req.params.id]
+      [status, comment || '', requestId]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Request not found' });
@@ -139,8 +147,12 @@ router.put('/:id', requireRole('employer', 'hr'), async (req, res) => {
 
 // Delete request (HR only)
 router.delete('/:id', requireRole('hr'), async (req, res) => {
+  const requestId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(requestId) || requestId < 1) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
   try {
-    const result = await db.query('DELETE FROM requests WHERE id = $1 RETURNING id', [req.params.id]);
+    const result = await db.query('DELETE FROM requests WHERE id = $1 RETURNING id', [requestId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Request not found' });
     }
