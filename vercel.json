@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm install",
+  "envPrefix": "VITE_",
+  "env": {
+    "DATABASE_URL": "@DATABASE_URL",
+    "SUPABASE_URL": "@SUPABASE_URL",
+    "SUPABASE_KEY": "@SUPABASE_KEY",
+    "SESSION_SECRET": "@SESSION_SECRET",
+    "NODE_ENV": "production"
+  }
+}
