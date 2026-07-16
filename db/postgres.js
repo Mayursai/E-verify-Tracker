@@ -1,8 +1,25 @@
 const { Pool } = require('pg');
 
+const connectionString = process.env.DATABASE_URL;
+
+// Hosted Postgres (Supabase, Render, Neon, ...) requires TLS; a local dev
+// database usually doesn't. DATABASE_SSL overrides the auto-detection.
+function sslConfig() {
+  if (process.env.DATABASE_SSL === 'false') return false;
+  if (process.env.DATABASE_SSL === 'true') return { rejectUnauthorized: false };
+  const isHosted = /supabase\.(co|com)|render\.com|neon\.tech/.test(connectionString || '');
+  if (process.env.NODE_ENV === 'production' || isHosted) {
+    return { rejectUnauthorized: false };
+  }
+  return false;
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: sslConfig(),
+  // Supabase's free-tier pooler allows a small number of connections;
+  // keep the app well under the cap.
+  max: Number(process.env.PG_POOL_MAX) || 5,
 });
 
 async function query(text, params) {
