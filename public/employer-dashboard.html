@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employer Dashboard - E-Verify Tracker</title>
+<script>
+  (function () {
+    let t = null;
+    try { t = localStorage.getItem('theme'); } catch (e) {}
+    if (t !== 'dark' && t !== 'light') {
+      t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Employer Dashboard</h1>
+    <div class="topbar-user">
+      <button class="theme-toggle" type="button">🌙</button>
+      <span id="user-greeting"></span>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>All Requests</h2>
+      <div id="list-alert" class="alert" style="display:none;"></div>
+      <div class="filter-bar">
+        <div class="form-field">
+          <label for="filter-status">Status</label>
+          <select id="filter-status">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="denied">Denied</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="filter-date">Start Date</label>
+          <input type="date" id="filter-date">
+        </div>
+        <div class="form-field">
+          <label for="sort-by">Sort By</label>
+          <select id="sort-by">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="clear-filter-btn">Clear Filters</button>
+      </div>
+      <p id="request-count" class="auth-subtitle"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Start Date</th>
+              <th>Status</th>
+              <th>Comments</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="requests-body"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none;">No requests found.</div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="verify-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Verify Request</h3>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div id="modal-alert" class="alert" style="display:none;"></div>
+      <div id="modal-details"></div>
+      <div class="form-field">
+        <label for="modal-comment">Comment</label>
+        <textarea id="modal-comment" placeholder="Add a comment (optional)"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="deny-btn">Deny</button>
+        <button class="btn btn-approve" id="approve-btn">Approve</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    let requests = [];
+    let activeRequestId = null;
+
+    const listAlert = document.getElementById('list-alert');
+    const requestsBody = document.getElementById('requests-body');
+    const emptyState = document.getElementById('empty-state');
+    const requestCount = document.getElementById('request-count');
+    const filterStatus = document.getElementById('filter-status');
+    const filterDate = document.getElementById('filter-date');
+    const sortBy = document.getElementById('sort-by');
+
+    const modal = document.getElementById('verify-modal');
+    const modalAlert = document.getElementById('modal-alert');
+    const modalDetails = document.getElementById('modal-details');
+    const modalComment = document.getElementById('modal-comment');
+
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.getElementById('clear-filter-btn').addEventListener('click', () => {
+      filterStatus.value = '';
+      filterDate.value = '';
+      renderRequests();
+    });
+    filterStatus.addEventListener('change', renderRequests);
+    filterDate.addEventListener('change', renderRequests);
+    sortBy.addEventListener('change', renderRequests);
+
+    function renderRequests() {
+      let rows = [...requests];
+
+      if (filterStatus.value) {
+        rows = rows.filter((r) => r.status === filterStatus.value);
+      }
+      if (filterDate.value) {
+        rows = rows.filter((r) => r.startDate === filterDate.value);
+      }
+
+      if (sortBy.value === 'newest') {
+        rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      } else if (sortBy.value === 'oldest') {
+        rows.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      } else if (sortBy.value === 'status') {
+        rows.sort((a, b) => (a.status || '').localeCompare(b.status || ''));
+      }
+
+      requestCount.textContent = `${rows.length} request${rows.length === 1 ? '' : 's'}`;
+
+      if (rows.length === 0) {
+        requestsBody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      requestsBody.innerHTML = rows.map((r) => `
+        <tr>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.email)}</td>
+          <td>${formatDate(r.startDate)}</td>
+          <td>${statusBadge(r.status)}</td>
+          <td>${escapeHtml(r.comment || '-')}</td>
+          <td><button class="btn btn-sm" data-id="${r.id}">Verify</button></td>
+        </tr>
+      `).join('');
+
+      requestsBody.querySelectorAll('button[data-id]').forEach((btn) => {
+        btn.addEventListener('click', () => openModal(btn.dataset.id));
+      });
+    }
+
+    function openModal(id) {
+      activeRequestId = id;
+      const r = requests.find((req) => String(req.id) === String(id));
+      if (!r) return;
+      clearAlert(modalAlert);
+      modalComment.value = '';
+      modalDetails.innerHTML = `
+        <div class="detail-row"><span class="detail-label">Name</span><span>${escapeHtml(r.name)}</span></div>
+        <div class="detail-row"><span class="detail-label">Email</span><span>${escapeHtml(r.email)}</span></div>
+        <div class="detail-row"><span class="detail-label">Start Date</span><span>${formatDate(r.startDate)}</span></div>
+        <div class="detail-row"><span class="detail-label">Status</span><span>${statusBadge(r.status)}</span></div>
+      `;
+      modal.classList.add('open');
+    }
+
+    function closeModal() {
+      modal.classList.remove('open');
+      activeRequestId = null;
+    }
+
+    async function submitDecision(status) {
+      if (!activeRequestId) return;
+      clearAlert(modalAlert);
+      try {
+        await apiFetch(`/requests/${activeRequestId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ status, comment: modalComment.value.trim() }),
+        });
+        closeModal();
+        await loadRequests();
+      } catch (err) {
+        showAlert(modalAlert, err.message || 'Failed to update request');
+      }
+    }
+
+    document.getElementById('approve-btn').addEventListener('click', () => submitDecision('approved'));
+    document.getElementById('deny-btn').addEventListener('click', () => submitDecision('denied'));
+
+    async function loadRequests() {
+      try {
+        const data = await apiFetch('/requests');
+        requests = data.requests || [];
+        renderRequests();
+      } catch (err) {
+        showAlert(listAlert, err.message || 'Failed to load requests');
+      }
+    }
+
+    (async () => {
+      const user = await requireAuth(['employer']);
+      if (!user) return;
+      document.getElementById('user-greeting').textContent = `${user.username} (Employer)`;
+      await loadRequests();
+    })();
+  </script>
+</body>
+</html>

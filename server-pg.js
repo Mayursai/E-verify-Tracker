@@ -8,21 +8,53 @@ const db = require('./db/postgres');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Behind Render/Heroku/etc. the app sits behind a TLS-terminating proxy;
+// without this, secure cookies are never set and login breaks in production.
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+// Security headers
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'same-origin',
+    'Content-Security-Policy':
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+  });
+  if (isProduction) {
+    res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session configuration
+if (isProduction && !process.env.SESSION_SECRET) {
+  console.warn('⚠ SESSION_SECRET is not set - using an insecure default. Set it in your environment.');
+}
+
+// Session configuration. In production (or whenever DATABASE_URL is set),
+// sessions are stored in Postgres so they survive restarts and don't leak
+// memory the way the default MemoryStore does.
+const pgSession = require('connect-pg-simple')(session);
 app.use(session({
+  store: process.env.DATABASE_URL
+    ? new pgSession({ pool: db.pool, createTableIfMissing: true })
+    : undefined,
   secret: process.env.SESSION_SECRET || 'everify-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true, 
-    maxAge: 24 * 60 * 60 * 1000 
+  cookie: {
+    secure: isProduction,
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
