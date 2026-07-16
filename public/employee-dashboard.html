@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Dashboard - E-Verify Tracker</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Employee Dashboard</h1>
+    <div class="topbar-user">
+      <span id="user-greeting"></span>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Submit New Request</h2>
+      <div id="form-alert" class="alert" style="display:none;"></div>
+      <form id="request-form">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="req-name">Full Name</label>
+            <input type="text" id="req-name" required>
+          </div>
+          <div class="form-field">
+            <label for="req-email">Email</label>
+            <input type="email" id="req-email" required>
+          </div>
+          <div class="form-field">
+            <label for="req-start-date">Start Date</label>
+            <input type="date" id="req-start-date" required>
+          </div>
+        </div>
+        <div class="form-row" id="custom-fields-container"></div>
+        <button type="submit" class="btn" id="submit-btn">Submit Request</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>My Requests</h2>
+      <div class="filter-bar">
+        <div class="form-field">
+          <label for="filter-date">Filter by Start Date</label>
+          <input type="date" id="filter-date">
+        </div>
+        <div class="form-field">
+          <label for="sort-by">Sort By</label>
+          <select id="sort-by">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="clear-filter-btn">Clear Filter</button>
+      </div>
+      <p id="request-count" class="auth-subtitle"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Start Date</th>
+              <th>Status</th>
+              <th>Comments</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody id="requests-body"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none;">No requests yet.</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+  <script>
+    let customFields = [];
+    let myRequests = [];
+
+    const formAlert = document.getElementById('form-alert');
+    const requestForm = document.getElementById('request-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const customFieldsContainer = document.getElementById('custom-fields-container');
+    const requestsBody = document.getElementById('requests-body');
+    const emptyState = document.getElementById('empty-state');
+    const requestCount = document.getElementById('request-count');
+    const filterDate = document.getElementById('filter-date');
+    const sortBy = document.getElementById('sort-by');
+
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('clear-filter-btn').addEventListener('click', () => {
+      filterDate.value = '';
+      renderRequests();
+    });
+    filterDate.addEventListener('change', renderRequests);
+    sortBy.addEventListener('change', renderRequests);
+
+    function renderCustomFieldInputs() {
+      customFieldsContainer.innerHTML = customFields.map((field) => {
+        const id = `custom-${field.id}`;
+        const requiredAttr = field.required ? 'required' : '';
+        let input;
+        if (field.type === 'textarea') {
+          input = `<textarea id="${id}" ${requiredAttr}></textarea>`;
+        } else if (field.type === 'select') {
+          const options = (field.options || []).map((opt) => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('');
+          input = `<select id="${id}" ${requiredAttr}><option value="">Select...</option>${options}</select>`;
+        } else {
+          input = `<input type="text" id="${id}" ${requiredAttr}>`;
+        }
+        return `<div class="form-field"><label for="${id}">${escapeHtml(field.name)}${field.required ? ' *' : ''}</label>${input}</div>`;
+      }).join('');
+    }
+
+    function renderRequests() {
+      let rows = [...myRequests];
+
+      if (filterDate.value) {
+        rows = rows.filter((r) => r.startDate === filterDate.value);
+      }
+
+      if (sortBy.value === 'newest') {
+        rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      } else if (sortBy.value === 'oldest') {
+        rows.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      } else if (sortBy.value === 'status') {
+        rows.sort((a, b) => (a.status || '').localeCompare(b.status || ''));
+      }
+
+      requestCount.textContent = `${rows.length} request${rows.length === 1 ? '' : 's'}`;
+
+      if (rows.length === 0) {
+        requestsBody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      requestsBody.innerHTML = rows.map((r) => `
+        <tr>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.email)}</td>
+          <td>${formatDate(r.startDate)}</td>
+          <td>${statusBadge(r.status)}</td>
+          <td>${escapeHtml(r.comment || '-')}</td>
+          <td>${formatDate(r.createdAt)}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadCustomFields() {
+      try {
+        const data = await apiFetch('/admin/fields');
+        customFields = data.fields || [];
+        renderCustomFieldInputs();
+      } catch (err) {
+        customFields = [];
+      }
+    }
+
+    async function loadRequests() {
+      try {
+        const data = await apiFetch('/requests');
+        myRequests = data.requests || [];
+        renderRequests();
+      } catch (err) {
+        showAlert(formAlert, err.message || 'Failed to load requests');
+      }
+    }
+
+    requestForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearAlert(formAlert);
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      const customFieldValues = {};
+      customFields.forEach((field) => {
+        const el = document.getElementById(`custom-${field.id}`);
+        if (el) customFieldValues[field.id] = el.value;
+      });
+
+      try {
+        await apiFetch('/requests', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: document.getElementById('req-name').value.trim(),
+            email: document.getElementById('req-email').value.trim(),
+            startDate: document.getElementById('req-start-date').value,
+            customFields: customFieldValues,
+          }),
+        });
+        showAlert(formAlert, 'Request submitted successfully.', 'success');
+        requestForm.reset();
+        renderCustomFieldInputs();
+        await loadRequests();
+      } catch (err) {
+        showAlert(formAlert, err.message || 'Failed to submit request');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Request';
+      }
+    });
+
+    (async () => {
+      const user = await requireAuth(['employee']);
+      if (!user) return;
+      document.getElementById('user-greeting').textContent = `${user.username} (Employee)`;
+      await loadCustomFields();
+      await loadRequests();
+    })();
+  </script>
+</body>
+</html>

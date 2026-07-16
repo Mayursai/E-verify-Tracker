@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Dashboard - E-Verify Tracker</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>HR Dashboard</h1>
+    <div class="topbar-user">
+      <span id="user-greeting"></span>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="stats">Statistics</button>
+      <button class="tab-btn" data-tab="requests">All Requests</button>
+      <button class="tab-btn" data-tab="fields">Manage Fields</button>
+    </div>
+
+    <section class="card tab-panel" data-panel="stats">
+      <h2>Overview</h2>
+      <div class="stats-grid">
+        <div class="stat-tile"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-approved">0</div><div class="stat-label">Approved</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-denied">0</div><div class="stat-label">Denied</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
+      </div>
+    </section>
+
+    <section class="card tab-panel" data-panel="requests" style="display:none;">
+      <h2>All Requests</h2>
+      <div id="requests-alert" class="alert" style="display:none;"></div>
+      <div class="filter-bar">
+        <div class="form-field">
+          <label for="filter-status">Status</label>
+          <select id="filter-status">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="denied">Denied</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="filter-date">Start Date</label>
+          <input type="date" id="filter-date">
+        </div>
+        <div class="form-field">
+          <label for="sort-by">Sort By</label>
+          <select id="sort-by">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="clear-filter-btn">Clear Filters</button>
+      </div>
+      <p id="request-count" class="auth-subtitle"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Start Date</th>
+              <th>Status</th>
+              <th>Comments</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="requests-body"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none;">No requests found.</div>
+      </div>
+    </section>
+
+    <section class="card tab-panel" data-panel="fields" style="display:none;">
+      <h2>Manage Custom Fields</h2>
+      <div id="fields-alert" class="alert" style="display:none;"></div>
+      <form id="field-form">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="field-name">Field Name</label>
+            <input type="text" id="field-name" required>
+          </div>
+          <div class="form-field">
+            <label for="field-type">Field Type</label>
+            <select id="field-type">
+              <option value="text">Text</option>
+              <option value="textarea">Textarea</option>
+              <option value="select">Select</option>
+            </select>
+          </div>
+          <div class="form-field checkbox-field" style="align-self:center;">
+            <input type="checkbox" id="field-required">
+            <label for="field-required">Required</label>
+          </div>
+        </div>
+        <button type="submit" class="btn">Add Field</button>
+      </form>
+
+      <div class="table-wrap" style="margin-top:20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fields-body"></tbody>
+        </table>
+        <div id="fields-empty" class="empty-state" style="display:none;">No custom fields yet.</div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="status-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Update Status</h3>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div id="modal-alert" class="alert" style="display:none;"></div>
+      <div id="modal-details"></div>
+      <div class="form-field">
+        <label for="modal-status">Status</label>
+        <select id="modal-status">
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="denied">Denied</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="modal-comment">Comment</label>
+        <textarea id="modal-comment" placeholder="Add a comment (optional)"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="delete-btn">Delete Request</button>
+        <button class="btn" id="save-status-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    let requests = [];
+    let fields = [];
+    let activeRequestId = null;
+
+    // ---- Tabs ----
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach((panel) => {
+          panel.style.display = panel.dataset.panel === tab ? 'block' : 'none';
+        });
+      });
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', logout);
+
+    // ---- Requests tab ----
+    const requestsAlert = document.getElementById('requests-alert');
+    const requestsBody = document.getElementById('requests-body');
+    const emptyState = document.getElementById('empty-state');
+    const requestCount = document.getElementById('request-count');
+    const filterStatus = document.getElementById('filter-status');
+    const filterDate = document.getElementById('filter-date');
+    const sortBy = document.getElementById('sort-by');
+
+    const modal = document.getElementById('status-modal');
+    const modalAlert = document.getElementById('modal-alert');
+    const modalDetails = document.getElementById('modal-details');
+    const modalStatus = document.getElementById('modal-status');
+    const modalComment = document.getElementById('modal-comment');
+
+    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.getElementById('clear-filter-btn').addEventListener('click', () => {
+      filterStatus.value = '';
+      filterDate.value = '';
+      renderRequests();
+    });
+    filterStatus.addEventListener('change', renderRequests);
+    filterDate.addEventListener('change', renderRequests);
+    sortBy.addEventListener('change', renderRequests);
+
+    function renderRequests() {
+      let rows = [...requests];
+
+      if (filterStatus.value) {
+        rows = rows.filter((r) => r.status === filterStatus.value);
+      }
+      if (filterDate.value) {
+        rows = rows.filter((r) => r.startDate === filterDate.value);
+      }
+
+      if (sortBy.value === 'newest') {
+        rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      } else if (sortBy.value === 'oldest') {
+        rows.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      } else if (sortBy.value === 'status') {
+        rows.sort((a, b) => (a.status || '').localeCompare(b.status || ''));
+      }
+
+      requestCount.textContent = `${rows.length} request${rows.length === 1 ? '' : 's'}`;
+
+      if (rows.length === 0) {
+        requestsBody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      requestsBody.innerHTML = rows.map((r) => `
+        <tr>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.email)}</td>
+          <td>${formatDate(r.startDate)}</td>
+          <td>${statusBadge(r.status)}</td>
+          <td>${escapeHtml(r.comment || '-')}</td>
+          <td><button class="btn btn-sm" data-id="${r.id}">Update Status</button></td>
+        </tr>
+      `).join('');
+
+      requestsBody.querySelectorAll('button[data-id]').forEach((btn) => {
+        btn.addEventListener('click', () => openModal(btn.dataset.id));
+      });
+    }
+
+    function openModal(id) {
+      activeRequestId = id;
+      const r = requests.find((req) => String(req.id) === String(id));
+      if (!r) return;
+      clearAlert(modalAlert);
+      modalStatus.value = r.status || 'pending';
+      modalComment.value = r.comment || '';
+      modalDetails.innerHTML = `
+        <div class="detail-row"><span class="detail-label">Name</span><span>${escapeHtml(r.name)}</span></div>
+        <div class="detail-row"><span class="detail-label">Email</span><span>${escapeHtml(r.email)}</span></div>
+        <div class="detail-row"><span class="detail-label">Start Date</span><span>${formatDate(r.startDate)}</span></div>
+      `;
+      modal.classList.add('open');
+    }
+
+    function closeModal() {
+      modal.classList.remove('open');
+      activeRequestId = null;
+    }
+
+    document.getElementById('save-status-btn').addEventListener('click', async () => {
+      if (!activeRequestId) return;
+      clearAlert(modalAlert);
+      try {
+        await apiFetch(`/requests/${activeRequestId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ status: modalStatus.value, comment: modalComment.value.trim() }),
+        });
+        closeModal();
+        await Promise.all([loadRequests(), loadStats()]);
+      } catch (err) {
+        showAlert(modalAlert, err.message || 'Failed to update request');
+      }
+    });
+
+    document.getElementById('delete-btn').addEventListener('click', async () => {
+      if (!activeRequestId) return;
+      if (!confirm('Delete this request? This cannot be undone.')) return;
+      clearAlert(modalAlert);
+      try {
+        await apiFetch(`/requests/${activeRequestId}`, { method: 'DELETE' });
+        closeModal();
+        await Promise.all([loadRequests(), loadStats()]);
+      } catch (err) {
+        showAlert(modalAlert, err.message || 'Failed to delete request');
+      }
+    });
+
+    async function loadRequests() {
+      try {
+        const data = await apiFetch('/requests');
+        requests = data.requests || [];
+        renderRequests();
+      } catch (err) {
+        showAlert(requestsAlert, err.message || 'Failed to load requests');
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const data = await apiFetch('/admin/stats');
+        const stats = data.stats || {};
+        document.getElementById('stat-total').textContent = stats.total || 0;
+        document.getElementById('stat-pending').textContent = stats.pending || 0;
+        document.getElementById('stat-approved').textContent = stats.approved || 0;
+        document.getElementById('stat-denied').textContent = stats.denied || 0;
+        document.getElementById('stat-completed').textContent = stats.completed || 0;
+      } catch (err) {
+        // stats are non-critical, ignore
+      }
+    }
+
+    // ---- Fields tab ----
+    const fieldsAlert = document.getElementById('fields-alert');
+    const fieldsBody = document.getElementById('fields-body');
+    const fieldsEmpty = document.getElementById('fields-empty');
+    const fieldForm = document.getElementById('field-form');
+
+    function renderFields() {
+      if (fields.length === 0) {
+        fieldsBody.innerHTML = '';
+        fieldsEmpty.style.display = 'block';
+        return;
+      }
+      fieldsEmpty.style.display = 'none';
+      fieldsBody.innerHTML = fields.map((f) => `
+        <tr>
+          <td>${escapeHtml(f.name)}</td>
+          <td>${escapeHtml(f.type)}</td>
+          <td>${f.required ? 'Yes' : 'No'}</td>
+          <td><button class="btn btn-danger btn-sm" data-id="${f.id}">Delete</button></td>
+        </tr>
+      `).join('');
+
+      fieldsBody.querySelectorAll('button[data-id]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteField(btn.dataset.id));
+      });
+    }
+
+    async function loadFields() {
+      try {
+        const data = await apiFetch('/admin/fields');
+        fields = data.fields || [];
+        renderFields();
+      } catch (err) {
+        showAlert(fieldsAlert, err.message || 'Failed to load fields');
+      }
+    }
+
+    async function deleteField(id) {
+      if (!confirm('Delete this field? It will be removed from all request forms.')) return;
+      clearAlert(fieldsAlert);
+      try {
+        await apiFetch(`/admin/fields/${id}`, { method: 'DELETE' });
+        await loadFields();
+      } catch (err) {
+        showAlert(fieldsAlert, err.message || 'Failed to delete field');
+      }
+    }
+
+    fieldForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearAlert(fieldsAlert);
+      try {
+        await apiFetch('/admin/fields', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: document.getElementById('field-name').value.trim(),
+            type: document.getElementById('field-type').value,
+            required: document.getElementById('field-required').checked,
+          }),
+        });
+        fieldForm.reset();
+        await loadFields();
+      } catch (err) {
+        showAlert(fieldsAlert, err.message || 'Failed to add field');
+      }
+    });
+
+    (async () => {
+      const user = await requireAuth(['hr']);
+      if (!user) return;
+      document.getElementById('user-greeting').textContent = `${user.username} (HR)`;
+      await Promise.all([loadRequests(), loadStats(), loadFields()]);
+    })();
+  </script>
+</body>
+</html>
