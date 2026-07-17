@@ -70,6 +70,15 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS request_comments (
+      id SERIAL PRIMARY KEY,
+      request_id INTEGER NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+      author TEXT NOT NULL,
+      role TEXT NOT NULL,
+      comment TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS request_field_values (
       id SERIAL PRIMARY KEY,
       request_id INTEGER NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
@@ -85,6 +94,14 @@ async function initializeDatabase() {
     ALTER TABLE requests DROP CONSTRAINT IF EXISTS requests_request_status_check;
     ALTER TABLE requests ADD CONSTRAINT requests_request_status_check
       CHECK (request_status IN ('pending', 'inprogress', 'approved', 'denied', 'completed'));
+  `);
+
+  // completed_date now doubles as the resolution date for rejected requests
+  // (the cleanup cron deletes both 10 days after it). Backfill any denied
+  // rows from before this change so they don't linger forever.
+  await pool.query(`
+    UPDATE requests SET completed_date = CURRENT_DATE
+    WHERE request_status = 'denied' AND completed_date IS NULL;
   `);
 
   console.log('✓ Database schema initialized');

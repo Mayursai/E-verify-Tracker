@@ -198,7 +198,7 @@ router.put('/:id', requireRole('employer', 'hr'), async (req, res) => {
       `UPDATE requests
        SET request_status = $1,
            comment = COALESCE(NULLIF($2, ''), comment),
-           completed_date = CASE WHEN $1 = 'completed' THEN CURRENT_DATE ELSE NULL END
+           completed_date = CASE WHEN $1 IN ('completed', 'denied') THEN CURRENT_DATE ELSE NULL END
        WHERE id = $3
        RETURNING *`,
       [status, comment || '', requestId]
@@ -206,10 +206,53 @@ router.put('/:id', requireRole('employer', 'hr'), async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Request not found' });
     }
+
+    // Keep a history of reviewer comments (cascade-deleted with the request)
+    if (comment && comment.trim()) {
+      await db.query(
+        `INSERT INTO request_comments (request_id, author, role, comment) VALUES ($1, $2, $3, $4)`,
+        [requestId, req.session.user.username, req.session.user.role, comment.trim()]
+      );
+    }
+
     res.json({ request: toRequestJson(result.rows[0]) });
   } catch (error) {
     console.error('Update request error:', error);
     res.status(500).json({ error: 'Failed to update request' });
+  }
+});
+
+// Comment history for a request (same visibility rules as the request itself)
+router.get('/:id/comments', requireAuth, async (req, res) => {
+  const requestId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(requestId) || requestId < 1) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
+  try {
+    const request = await db.query('SELECT user_id FROM requests WHERE id = $1', [requestId]);
+    if (request.rows.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    const { role, id } = req.session.user;
+    if (role === 'employee' && request.rows[0].user_id !== id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    const result = await db.query(
+      `SELECT author, role, comment, created_at FROM request_comments
+       WHERE request_id = $1 ORDER BY created_at`,
+      [requestId]
+    );
+    res.json({
+      comments: result.rows.map((c) => ({
+        author: c.author,
+        role: c.role,
+        comment: c.comment,
+        createdAt: c.created_at,
+      })),
+    });
+  } catch (error) {
+    console.error('List comments error:', error);
+    res.status(500).json({ error: 'Failed to load comments' });
   }
 });
 

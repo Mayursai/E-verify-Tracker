@@ -9,8 +9,9 @@ access for Employees, Employers, and HR.
 
 Request statuses shown in the app: **Applied → In Progress (HR working on it) → Approved / Rejected → Completed**.
 
-Extras: dark/light mode, filtering and sorting, auto-deletion of completed
-requests after 7 days (daily cron at midnight).
+Extras: dark/light mode, filtering and sorting, reviewer comment history,
+and auto-deletion of Rejected/Completed requests 10 days after resolution
+(daily cron at midnight).
 
 ## Run it locally
 
@@ -82,6 +83,7 @@ render.yaml          # One-click Render deployment
 | POST | `/api/requests` | employee |
 | PUT | `/api/requests/:id` | employer (approve/reject), HR (any status) |
 | PUT | `/api/requests/:id/details` | employee (own, while Applied), employer, HR |
+| GET | `/api/requests/:id/comments` | same visibility as the request |
 | DELETE | `/api/requests/:id` | HR |
 | GET | `/api/admin/fields` | signed in |
 | POST/DELETE | `/api/admin/fields[/:id]` | HR |

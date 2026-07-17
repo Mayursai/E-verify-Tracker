@@ -84,6 +84,7 @@
       </div>
       <div id="modal-alert" class="alert" style="display:none;"></div>
       <div id="modal-details"></div>
+      <div id="modal-comments"></div>
       <div class="form-field">
         <label for="modal-comment">Comment</label>
         <textarea id="modal-comment" placeholder="Add a comment (optional)"></textarea>
@@ -190,6 +191,7 @@
         <div class="detail-row"><span class="detail-label">Status</span><span>${statusBadge(r.status)}</span></div>
       `;
       modal.classList.add('open');
+      renderCommentHistory(id, document.getElementById('modal-comments'));
     }
 
     function closeModal() {

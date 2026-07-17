@@ -497,6 +497,38 @@ tbody tr:hover {
   color: var(--badge-completed-text);
 }
 
+.comment-history {
+  margin: 14px 0 4px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.comment-history-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+
+.comment-item {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.comment-item .comment-meta {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin-bottom: 2px;
+}
+
 /* ---------- Modal ---------- */
 
 .modal-overlay {
