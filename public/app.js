@@ -107,6 +107,7 @@ function escapeHtml(value) {
 // (Internal values stay pending/approved/denied/completed.)
 const STATUS_LABELS = {
   pending: 'Applied',
+  inprogress: 'In Progress',
   approved: 'Approved',
   denied: 'Rejected',
   completed: 'Completed',

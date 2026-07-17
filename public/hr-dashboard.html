@@ -38,6 +38,7 @@
       <div class="stats-grid">
         <div class="stat-tile"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total</div></div>
         <div class="stat-tile"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Applied</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-inprogress">0</div><div class="stat-label">In Progress</div></div>
         <div class="stat-tile"><div class="stat-value" id="stat-approved">0</div><div class="stat-label">Approved</div></div>
         <div class="stat-tile"><div class="stat-value" id="stat-denied">0</div><div class="stat-label">Rejected</div></div>
         <div class="stat-tile"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
@@ -53,6 +54,7 @@
           <select id="filter-status">
             <option value="">All</option>
             <option value="pending">Applied</option>
+            <option value="inprogress">In Progress</option>
             <option value="approved">Approved</option>
             <option value="denied">Rejected</option>
             <option value="completed">Completed</option>
@@ -145,6 +147,7 @@
         <label for="modal-status">Status</label>
         <select id="modal-status">
           <option value="pending">Applied</option>
+            <option value="inprogress">In Progress</option>
           <option value="approved">Approved</option>
           <option value="denied">Rejected</option>
           <option value="completed">Completed</option>
@@ -322,6 +325,7 @@
         const stats = data.stats || {};
         document.getElementById('stat-total').textContent = stats.total || 0;
         document.getElementById('stat-pending').textContent = stats.pending || 0;
+        document.getElementById('stat-inprogress').textContent = stats.inprogress || 0;
         document.getElementById('stat-approved').textContent = stats.approved || 0;
         document.getElementById('stat-denied').textContent = stats.denied || 0;
         document.getElementById('stat-completed').textContent = stats.completed || 0;

@@ -55,7 +55,7 @@ async function initializeDatabase() {
       email TEXT NOT NULL,
       start_date DATE NOT NULL,
       request_status TEXT NOT NULL DEFAULT 'pending'
-        CHECK (request_status IN ('pending', 'approved', 'denied', 'completed')),
+        CHECK (request_status IN ('pending', 'inprogress', 'approved', 'denied', 'completed')),
       comment TEXT,
       completed_date DATE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -78,6 +78,15 @@ async function initializeDatabase() {
       UNIQUE (request_id, field_id)
     );
   `);
+
+  // Migration for databases created before the 'inprogress' status existed:
+  // refresh the status check constraint so existing deployments accept it.
+  await pool.query(`
+    ALTER TABLE requests DROP CONSTRAINT IF EXISTS requests_request_status_check;
+    ALTER TABLE requests ADD CONSTRAINT requests_request_status_check
+      CHECK (request_status IN ('pending', 'inprogress', 'approved', 'denied', 'completed'));
+  `);
+
   console.log('✓ Database schema initialized');
 }
 

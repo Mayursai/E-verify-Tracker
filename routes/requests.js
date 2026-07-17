@@ -187,7 +187,7 @@ router.put('/:id', requireRole('employer', 'hr'), async (req, res) => {
   const { status, comment } = req.body || {};
   const allowed = req.session.user.role === 'employer'
     ? ['approved', 'denied']
-    : ['pending', 'approved', 'denied', 'completed'];
+    : ['pending', 'inprogress', 'approved', 'denied', 'completed'];
 
   if (!status || !allowed.includes(status)) {
     return res.status(400).json({ error: `Status must be one of: ${allowed.join(', ')}` });

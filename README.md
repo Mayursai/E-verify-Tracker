@@ -5,9 +5,9 @@ access for Employees, Employers, and HR.
 
 - **Employee** — submits requests (name, email, start date, custom fields), tracks their status, and can edit a request while it is still Applied
 - **Employer** — reviews applied requests, approves/rejects with a comment, and can edit request details
-- **HR** — sets any status, deletes requests, edits details, manages custom form fields, sees statistics
+- **HR** — marks requests In Progress when they start on them, sets any status, deletes requests, edits details, manages custom form fields, sees statistics
 
-Request statuses shown in the app: **Applied → Approved / Rejected → Completed**.
+Request statuses shown in the app: **Applied → In Progress (HR working on it) → Approved / Rejected → Completed**.
 
 Extras: dark/light mode, filtering and sorting, auto-deletion of completed
 requests after 7 days (daily cron at midnight).
