@@ -88,7 +88,28 @@ your service → Environment):
 For local dev, copy `.env.example` to `.env` — you can point it at the same
 Supabase database or any local Postgres.
 
-## 4. Free-hosting note
+## 4. Set up a free daily ping so Supabase never pauses (~2 minutes)
+
+Supabase's free plan pauses a project after 7 days without database
+activity (data is safe; restoring is one click for up to 90 days). A free
+uptime pinger visiting the app once a day wakes Render, which touches the
+database, which counts as activity — so the pause never happens.
+
+Using [cron-job.org](https://cron-job.org) (free):
+
+1. Sign up at <https://cron-job.org> and click **Create cronjob**.
+2. **URL**: your Render app URL, e.g. `https://everify-api.onrender.com/`.
+3. **Schedule**: once per day (any time). Every day is more than enough —
+   the 7-day inactivity window only needs one touch a week.
+4. Save. Done — the job's history page shows each ping succeeding.
+
+(Alternative: [UptimeRobot](https://uptimerobot.com) free plan does the
+same thing and also emails you if the site ever goes down. If you set its
+check interval to 5 minutes, it additionally keeps Render's free service
+awake around the clock, avoiding the ~30-60s cold start — Render's free
+750 hours/month cover one always-on service.)
+
+## 5. Free-hosting note
 
 All dependencies are free open-source packages and the app calls no paid
 services. The permanently free setup this repo is now configured for:
@@ -98,7 +119,7 @@ connection) comfortably covers an internal tracker like this. Render's free
 web service also sleeps after inactivity and wakes on the first request
 (~30-60s cold start).
 
-## 5. Cleanups — done ✅
+## 6. Cleanups — done ✅
 
 The repo was simplified in a later commit: the six overlapping deployment
 markdown files, the duplicate `package-prod.json`, and the unusable

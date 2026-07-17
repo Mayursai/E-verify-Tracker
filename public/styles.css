@@ -23,6 +23,8 @@
   --alert-success-border: #bbf7d0;
   --badge-pending-bg: #fef3c7;
   --badge-pending-text: #92400e;
+  --badge-inprogress-bg: #dbeafe;
+  --badge-inprogress-text: #1d4ed8;
   --badge-approved-bg: #dcfce7;
   --badge-approved-text: #15803d;
   --badge-denied-bg: #fee2e2;
@@ -60,6 +62,8 @@
   --alert-success-border: #14532d;
   --badge-pending-bg: #3d3117;
   --badge-pending-text: #fcd34d;
+  --badge-inprogress-bg: #172a54;
+  --badge-inprogress-text: #93c5fd;
   --badge-approved-bg: #14311f;
   --badge-approved-text: #86efac;
   --badge-denied-bg: #3a1d1f;
@@ -473,6 +477,11 @@ tbody tr:hover {
   color: var(--badge-pending-text);
 }
 
+.badge-inprogress {
+  background: var(--badge-inprogress-bg);
+  color: var(--badge-inprogress-text);
+}
+
 .badge-approved {
   background: var(--badge-approved-bg);
   color: var(--badge-approved-text);
@@ -486,6 +495,38 @@ tbody tr:hover {
 .badge-completed {
   background: var(--badge-completed-bg);
   color: var(--badge-completed-text);
+}
+
+.comment-history {
+  margin: 14px 0 4px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.comment-history-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+
+.comment-item {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.comment-item .comment-meta {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin-bottom: 2px;
 }
 
 /* ---------- Modal ---------- */

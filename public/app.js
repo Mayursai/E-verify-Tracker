@@ -107,6 +107,7 @@ function escapeHtml(value) {
 // (Internal values stay pending/approved/denied/completed.)
 const STATUS_LABELS = {
   pending: 'Applied',
+  inprogress: 'In Progress',
   approved: 'Approved',
   denied: 'Rejected',
   completed: 'Completed',
@@ -237,6 +238,31 @@ function openEditModal(request, customFields, onSaved) {
   }).join('');
 
   document.getElementById('edit-modal').classList.add('open');
+}
+
+const ROLE_LABELS = { employee: 'Employee', employer: 'Employer', hr: 'HR' };
+
+async function renderCommentHistory(requestId, container) {
+  if (!container) return;
+  container.innerHTML = '';
+  try {
+    const data = await apiFetch(`/requests/${requestId}/comments`);
+    const comments = data.comments || [];
+    if (comments.length === 0) return;
+    container.innerHTML = `
+      <div class="comment-history">
+        <div class="comment-history-title">Comment History</div>
+        ${comments.map((c) => `
+          <div class="comment-item">
+            <div class="comment-meta">${escapeHtml(c.author)} (${escapeHtml(ROLE_LABELS[c.role] || c.role)}) · ${formatDate(c.createdAt)}</div>
+            <div>${escapeHtml(c.comment)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    // history is non-critical; leave the container empty
+  }
 }
 
 function showAlert(container, message, type = 'error') {

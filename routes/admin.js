@@ -71,6 +71,7 @@ router.get('/stats', requireRole('hr'), async (req, res) => {
       SELECT
         COUNT(*)::int AS total,
         COUNT(*) FILTER (WHERE request_status = 'pending')::int AS pending,
+        COUNT(*) FILTER (WHERE request_status = 'inprogress')::int AS inprogress,
         COUNT(*) FILTER (WHERE request_status = 'approved')::int AS approved,
         COUNT(*) FILTER (WHERE request_status = 'denied')::int AS denied,
         COUNT(*) FILTER (WHERE request_status = 'completed')::int AS completed

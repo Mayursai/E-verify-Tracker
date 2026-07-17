@@ -68,19 +68,19 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Auto-delete completed requests after 7 days
+// Auto-delete rejected and completed requests 10 days after resolution
 cron.schedule('0 0 * * *', async () => {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const cutoff = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   try {
     const result = await db.query(
-      `DELETE FROM requests 
-       WHERE request_status = 'completed' 
+      `DELETE FROM requests
+       WHERE request_status IN ('completed', 'denied')
        AND completed_date < $1::date`,
-      [sevenDaysAgo]
+      [cutoff]
     );
-    console.log(`Deleted ${result.rowCount} old completed requests`);
+    console.log(`Deleted ${result.rowCount} old resolved requests`);
   } catch (error) {
-    console.error('Error deleting old completed requests:', error);
+    console.error('Error deleting old resolved requests:', error);
   }
 });
 
