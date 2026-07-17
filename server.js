@@ -60,8 +60,8 @@ app.use(session({
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/requests', require('./routes/requests-pg'));
-app.use('/api/admin', require('./routes/admin-pg'));
+app.use('/api/requests', require('./routes/requests'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Home route
 app.get('/', (req, res) => {
