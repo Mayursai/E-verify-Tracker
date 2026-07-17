@@ -1,9 +1,13 @@
 {
-  "name": "project",
+  "name": "everify-tracker",
   "version": "1.0.0",
-  "main": "server-pg.js",
+  "description": "E-Verify Request Management System",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "start": "node server-pg.js",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -35,9 +35,9 @@
           <label for="filter-status">Status</label>
           <select id="filter-status">
             <option value="">All</option>
-            <option value="pending">Pending</option>
+            <option value="pending">Applied</option>
             <option value="approved">Approved</option>
-            <option value="denied">Denied</option>
+            <option value="denied">Rejected</option>
             <option value="completed">Completed</option>
           </select>
         </div>
@@ -88,7 +88,7 @@
         <textarea id="modal-comment" placeholder="Add a comment (optional)"></textarea>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-danger" id="deny-btn">Deny</button>
+        <button class="btn btn-danger" id="deny-btn">Reject</button>
         <button class="btn btn-approve" id="approve-btn">Approve</button>
       </div>
     </div>
@@ -97,6 +97,7 @@
   <script src="/app.js"></script>
   <script>
     let requests = [];
+    let customFields = [];
     let activeRequestId = null;
 
     const listAlert = document.getElementById('list-alert');
@@ -157,12 +158,21 @@
           <td>${formatDate(r.startDate)}</td>
           <td>${statusBadge(r.status)}</td>
           <td>${escapeHtml(r.comment || '-')}</td>
-          <td><button class="btn btn-sm" data-id="${r.id}">Verify</button></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" data-edit-id="${r.id}">Edit</button>
+            <button class="btn btn-sm" data-id="${r.id}">Verify</button>
+          </td>
         </tr>
       `).join('');
 
       requestsBody.querySelectorAll('button[data-id]').forEach((btn) => {
         btn.addEventListener('click', () => openModal(btn.dataset.id));
+      });
+      requestsBody.querySelectorAll('button[data-edit-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const r = requests.find((req) => String(req.id) === String(btn.dataset.editId));
+          if (r) openEditModal(r, customFields, loadRequests);
+        });
       });
     }
 
@@ -214,11 +224,20 @@
       }
     }
 
+    async function loadCustomFields() {
+      try {
+        const data = await apiFetch('/admin/fields');
+        customFields = data.fields || [];
+      } catch (err) {
+        customFields = [];
+      }
+    }
+
     (async () => {
       const user = await requireAuth(['employer']);
       if (!user) return;
       document.getElementById('user-greeting').textContent = `${user.username} (Employer)`;
-      await loadRequests();
+      await Promise.all([loadRequests(), loadCustomFields()]);
     })();
   </script>
 </body>

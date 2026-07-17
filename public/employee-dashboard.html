@@ -78,6 +78,7 @@
               <th>Status</th>
               <th>Comments</th>
               <th>Submitted</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="requests-body"></tbody>
@@ -159,8 +160,16 @@
           <td>${statusBadge(r.status)}</td>
           <td>${escapeHtml(r.comment || '-')}</td>
           <td>${formatDate(r.createdAt)}</td>
+          <td>${r.status === 'pending' ? `<button class="btn btn-secondary btn-sm" data-edit-id="${r.id}">Edit</button>` : ''}</td>
         </tr>
       `).join('');
+
+      requestsBody.querySelectorAll('button[data-edit-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const r = myRequests.find((req) => String(req.id) === String(btn.dataset.editId));
+          if (r) openEditModal(r, customFields, loadRequests);
+        });
+      });
     }
 
     async function loadCustomFields() {

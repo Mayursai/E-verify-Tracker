@@ -37,9 +37,9 @@
       <h2>Overview</h2>
       <div class="stats-grid">
         <div class="stat-tile"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total</div></div>
-        <div class="stat-tile"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Applied</div></div>
         <div class="stat-tile"><div class="stat-value" id="stat-approved">0</div><div class="stat-label">Approved</div></div>
-        <div class="stat-tile"><div class="stat-value" id="stat-denied">0</div><div class="stat-label">Denied</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-denied">0</div><div class="stat-label">Rejected</div></div>
         <div class="stat-tile"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
       </div>
     </section>
@@ -52,9 +52,9 @@
           <label for="filter-status">Status</label>
           <select id="filter-status">
             <option value="">All</option>
-            <option value="pending">Pending</option>
+            <option value="pending">Applied</option>
             <option value="approved">Approved</option>
-            <option value="denied">Denied</option>
+            <option value="denied">Rejected</option>
             <option value="completed">Completed</option>
           </select>
         </div>
@@ -144,9 +144,9 @@
       <div class="form-field">
         <label for="modal-status">Status</label>
         <select id="modal-status">
-          <option value="pending">Pending</option>
+          <option value="pending">Applied</option>
           <option value="approved">Approved</option>
-          <option value="denied">Denied</option>
+          <option value="denied">Rejected</option>
           <option value="completed">Completed</option>
         </select>
       </div>
@@ -240,12 +240,21 @@
           <td>${formatDate(r.startDate)}</td>
           <td>${statusBadge(r.status)}</td>
           <td>${escapeHtml(r.comment || '-')}</td>
-          <td><button class="btn btn-sm" data-id="${r.id}">Update Status</button></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" data-edit-id="${r.id}">Edit</button>
+            <button class="btn btn-sm" data-id="${r.id}">Update Status</button>
+          </td>
         </tr>
       `).join('');
 
       requestsBody.querySelectorAll('button[data-id]').forEach((btn) => {
         btn.addEventListener('click', () => openModal(btn.dataset.id));
+      });
+      requestsBody.querySelectorAll('button[data-edit-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const r = requests.find((req) => String(req.id) === String(btn.dataset.editId));
+          if (r) openEditModal(r, fields, () => Promise.all([loadRequests(), loadStats()]));
+        });
       });
     }
 

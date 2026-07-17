@@ -49,11 +49,11 @@ into `main` on GitHub and merge it:
 
 ## 2. Change the default user passwords before any real deployment
 
-`server-pg.js` seeds four demo users (`emp1`, `emp2`, `employer1`, `hr1`)
+`server.js` seeds four demo users (`emp1`, `emp2`, `employer1`, `hr1`)
 with the password `password123`. That is fine for local testing but must
 not reach production. Either:
 
-- change the passwords in `initializeDefaultUsers()` in `server-pg.js`, or
+- change the passwords in `initializeDefaultUsers()` in `server.js`, or
 - remove the seeding entirely once real accounts exist.
 
 Also remove the demo credentials box from `public/login.html` at the same
@@ -98,13 +98,11 @@ connection) comfortably covers an internal tracker like this. Render's free
 web service also sleeps after inactivity and wakes on the first request
 (~30-60s cold start).
 
-## 5. Optional cleanups (nice to have, not blocking)
+## 5. Cleanups — done ✅
 
-- `package-prod.json` duplicates `package.json` and its `dev` script points
-  at a `server.js` that doesn't exist. Consider deleting it or merging the
-  `engines` field into `package.json`.
-- The six deployment markdown files (`CLOUD_DEPLOYMENT.md`,
-  `DEPLOYMENT_STEPS.md`, etc.) overlap heavily. Consider consolidating into
-  one.
-- README's "Database" section still says SQLite; the app now runs on
-  PostgreSQL (`server-pg.js`). Update the docs when convenient.
+The repo was simplified in a later commit: the six overlapping deployment
+markdown files, the duplicate `package-prod.json`, and the unusable
+`vercel.json` were deleted; `server-pg.js` / `requests-pg.js` / `admin-pg.js`
+were renamed to `server.js` / `requests.js` / `admin.js`; and the README was
+rewritten to match the real app (Postgres/Supabase, correct file names,
+current setup steps). Nothing left to do here.

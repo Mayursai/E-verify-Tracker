@@ -110,6 +110,74 @@ router.post('/', requireRole('employee'), async (req, res) => {
   }
 });
 
+// Edit request details (name, email, start date, custom fields).
+// Employees can edit their own requests while still pending review;
+// employers and HR can edit any request at any time.
+router.put('/:id/details', requireAuth, async (req, res) => {
+  const requestId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(requestId) || requestId < 1) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
+  const { name, email, startDate, customFields } = req.body || {};
+  if (!name || !email || !startDate) {
+    return res.status(400).json({ error: 'Name, email and start date are required' });
+  }
+
+  try {
+    const existing = await db.query('SELECT * FROM requests WHERE id = $1', [requestId]);
+    const row = existing.rows[0];
+    if (!row) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    const { role, id: userId } = req.session.user;
+    if (role === 'employee') {
+      if (row.user_id !== userId) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+      if (row.request_status !== 'pending') {
+        return res.status(403).json({ error: 'This request has already been reviewed and can no longer be edited' });
+      }
+    }
+
+    const fieldsResult = await db.query('SELECT id, name, required FROM custom_fields');
+    for (const field of fieldsResult.rows) {
+      const value = customFields ? customFields[field.id] : undefined;
+      if (field.required && (value === undefined || String(value).trim() === '')) {
+        return res.status(400).json({ error: `Field "${field.name}" is required` });
+      }
+    }
+
+    const updated = await db.query(
+      `UPDATE requests SET name = $1, email = $2, start_date = $3 WHERE id = $4 RETURNING *`,
+      [name, email, startDate, requestId]
+    );
+
+    if (customFields && typeof customFields === 'object') {
+      for (const field of fieldsResult.rows) {
+        const value = customFields[field.id];
+        if (value === undefined) continue;
+        if (String(value).trim() === '') {
+          await db.query(
+            'DELETE FROM request_field_values WHERE request_id = $1 AND field_id = $2',
+            [requestId, field.id]
+          );
+        } else {
+          await db.query(
+            `INSERT INTO request_field_values (request_id, field_id, value) VALUES ($1, $2, $3)
+             ON CONFLICT (request_id, field_id) DO UPDATE SET value = EXCLUDED.value`,
+            [requestId, field.id, String(value)]
+          );
+        }
+      }
+    }
+
+    res.json({ request: toRequestJson(updated.rows[0]) });
+  } catch (error) {
+    console.error('Edit request error:', error);
+    res.status(500).json({ error: 'Failed to update request details' });
+  }
+});
+
 // Update status/comment (employer approves/denies, HR can set any status)
 router.put('/:id', requireRole('employer', 'hr'), async (req, res) => {
   const requestId = Number.parseInt(req.params.id, 10);
