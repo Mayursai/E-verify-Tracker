@@ -268,7 +268,7 @@
       if (!r) return;
       clearAlert(modalAlert);
       modalStatus.value = r.status || 'pending';
-      modalComment.value = r.comment || '';
+      modalComment.value = '';
       modalDetails.innerHTML = `
         <div class="detail-row"><span class="detail-label">Name</span><span>${escapeHtml(r.name)}</span></div>
         <div class="detail-row"><span class="detail-label">Email</span><span>${escapeHtml(r.email)}</span></div>
