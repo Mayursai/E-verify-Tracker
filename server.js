@@ -68,8 +68,22 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Auto-delete rejected and completed requests 10 days after resolution
-cron.schedule('0 0 * * *', async () => {
+// Health check. Runs a real database query so that uptime pings count as
+// Supabase activity (a static page alone would not touch the database).
+app.get('/health', async (req, res) => {
+  try {
+    await db.query('SELECT 1');
+    res.json({ status: 'ok' });
+  } catch (error) {
+    res.status(503).json({ status: 'database unavailable' });
+  }
+});
+
+// Auto-delete rejected and completed requests 10 days after resolution.
+// Runs at midnight AND at startup: on free hosting the service sleeps when
+// idle, so the midnight tick is often missed - the startup run guarantees
+// cleanup happens whenever the service wakes.
+async function cleanupOldRequests() {
   const cutoff = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   try {
     const result = await db.query(
@@ -78,11 +92,15 @@ cron.schedule('0 0 * * *', async () => {
        AND completed_date < $1::date`,
       [cutoff]
     );
-    console.log(`Deleted ${result.rowCount} old resolved requests`);
+    if (result.rowCount > 0) {
+      console.log(`Deleted ${result.rowCount} old resolved requests`);
+    }
   } catch (error) {
     console.error('Error deleting old resolved requests:', error);
   }
-});
+}
+
+cron.schedule('0 0 * * *', cleanupOldRequests);
 
 // Initialize default users if not exist
 async function initializeDefaultUsers() {
@@ -123,6 +141,9 @@ async function startServer() {
 
     // Initialize default users
     await initializeDefaultUsers();
+
+    // Clean up old resolved requests missed while the service was asleep
+    await cleanupOldRequests();
 
     app.listen(PORT, () => {
       console.log(`✓ Server running at http://localhost:${PORT}`);

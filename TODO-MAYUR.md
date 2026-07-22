@@ -98,7 +98,10 @@ database, which counts as activity — so the pause never happens.
 Using [cron-job.org](https://cron-job.org) (free):
 
 1. Sign up at <https://cron-job.org> and click **Create cronjob**.
-2. **URL**: your Render app URL, e.g. `https://everify-api.onrender.com/`.
+2. **URL**: your Render app's **/health** URL, e.g.
+   `https://everify-api.onrender.com/health` — this endpoint runs a real
+   database query, which is what counts as Supabase activity (the plain
+   homepage is a static file and would NOT keep Supabase awake).
 3. **Schedule**: once per day (any time). Every day is more than enough —
    the 7-day inactivity window only needs one touch a week.
 4. Save. Done — the job's history page shows each ping succeeding.
